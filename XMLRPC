@@ -1,0 +1,104 @@
+StormForce XR 
+=============
+Version: v0.5.0
+
+
+Preface
+=======
+This document will tell you about the XMLRPC procedures which StormForce XR expects.
+
+Remember: -
+
+1. The XMLRPC server is at http://SERVER:7397/xmlrpc/
+2. Datasets are compressed (using GZIP) XML files
+3. Ensure returned data isn't none (null, nothing, etc)
+
+
+NOTICE: As of v0.4.0 introspection has been added to the server.
+
+
+Datasets
+========
+Once uncompressed they will look like this (taken from unitStatus()): -
+
+<?xml version="1.0" ?>
+<SXRDataSet>
+    <Row CloseAlarm="0" Hardware="Boltek LD-250" ReceiverLastDetected="None" SevereAlarm="0"/>
+</SXRDataSet>
+
+
+The dataset might also contain multiple rows like this (strikePersistence()): -
+
+<?xml version="1.0" ?>
+<SXRDataSet>
+    <Row DateTimeOfStrike="2011-05-15 15:50:31" Persistence="0" X="250" Y="250"/>
+    <Row DateTimeOfStrike="2011-05-15 15:50:31" Persistence="0" X="250" Y="250"/>
+    <Row DateTimeOfStrike="2011-05-15 15:50:31" Persistence="0" X="250" Y="250"/>
+    <Row DateTimeOfStrike="2011-05-15 15:50:31" Persistence="0" X="250" Y="250"/>
+    <Row DateTimeOfStrike="2011-05-15 15:50:31" Persistence="0" X="250" Y="250"/>
+    <Row DateTimeOfStrike="2011-05-15 15:50:31" Persistence="0" X="250" Y="250"/>
+    <Row DateTimeOfStrike="2011-05-15 15:50:31" Persistence="0" X="250" Y="250"/>
+    <Row DateTimeOfStrike="2011-05-15 15:50:31" Persistence="0" X="250" Y="250"/>
+    <Row DateTimeOfStrike="2011-05-15 15:50:31" Persistence="0" X="250" Y="250"/>
+    <Row DateTimeOfStrike="2011-05-15 15:50:31" Persistence="0" X="250" Y="250"/>
+    <Row DateTimeOfStrike="2011-05-15 15:50:31" Persistence="1" X="250" Y="250"/>
+    <Row DateTimeOfStrike="2011-05-15 15:50:31" Persistence="1" X="250" Y="250"/>
+    <Row DateTimeOfStrike="2011-05-15 15:50:31" Persistence="1" X="250" Y="250"/>
+    <Row DateTimeOfStrike="2011-05-15 15:50:31" Persistence="1" X="250" Y="250"/>
+    <Row DateTimeOfStrike="2011-05-15 15:50:31" Persistence="1" X="250" Y="250"/>
+    <Row DateTimeOfStrike="2011-05-15 15:50:31" Persistence="1" X="250" Y="250"/>
+    <Row DateTimeOfStrike="2011-05-15 15:50:31" Persistence="1" X="250" Y="250"/>
+    <Row DateTimeOfStrike="2011-05-15 15:50:31" Persistence="1" X="250" Y="250"/>
+    <Row DateTimeOfStrike="2011-05-15 15:50:31" Persistence="1" X="250" Y="250"/>
+    <Row DateTimeOfStrike="2011-05-15 15:50:31" Persistence="1" X="250" Y="250"/>
+</SXRDataSet>
+
+
+Procedures
+==========
+Name:		fieldCounter()
+Arguments:	None
+Returns:	Dataset[kVm]
+Comments:	Returns the electric field strength from the Boltek EFM-100.
+
+Name:		lastHourOfStrikesByMinute()
+Arguments:	None
+Returns:	Dataset[Minute, StrikeAge, NumberOfStrikes]
+Comments:	Returns the number of strikes in the last hour grouped per minute, the strike age is represented in minutes.
+
+Name:		serverDetails()
+Arguments:	None
+Returns:	Dataset[ServerStarted, ServerApplication, ServerCopyright, ServerVersion, StrikeCopyright]
+Comments:	Returns specific details about the server StormForce XR is running on.
+
+Name:		serverUptime()
+Arguments:	None
+Returns:	Dataset[ServerStartedUT]
+Comments:	Returns the server started date in UNIX timestamp format.
+
+Name:		strikeCounter()
+Arguments:	None
+Returns:	Dataset[CloseMinute, CloseTotal, NoiseMinute, NoiseTotal, StrikesMinute, StrikesTotal, StrikesOutOfRange]
+Comments:	Returns the strike counters.
+
+Name:		strikePersistence()
+Arguments:	None
+Returns:	Dataset[StrikeAge, X, Y, RelativeX, RelativeY, DateTimeOfStrike]
+Comments:	Returns the persistence data based on the current time minus one hour, remember that depending on the server settings the X,Y co-ords maybe using uncorrected strike factors (default is to use corrected strike factors).  The relative values are based on the centre of the map and the strike age is represented in seconds.
+
+Name:		tracStatus()
+Arguments:	None
+Returns:	Dataset[Version, Active, NoOfStorms, MostActive, MostActiveDistance, Closest, ClosestDistance, Width]
+Comments:	Returns the status of the TRAC engine.
+
+Name:		tracStorms()
+Arguments:	None
+Returns:	Dataset[X, Y, XOffset, YOffset, Name, Intensity, Distance]
+Comments:	Returns the storms TRAC is monitoring for drawing on-screen.
+
+Name:		unitStatus()
+Arguments:	None
+Returns:	Dataset[Hardware, SquelchLevel, UseUncorrectedStrikes, CloseAlarm, SevereAlarm, ReceiverLastDetected, ReceiverLost]
+Comments:	Returns information about the Boltek LD-250 and Boltek EFM-100.
+
+<EOF>

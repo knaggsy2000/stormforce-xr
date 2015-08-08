@@ -1,0 +1,268 @@
+StormForce XR (XMLRPC) - Release v0.5.0 on 15/03/2014
+=====================================================
+Link: http://code.google.com/p/stormforce/
+
+For license and copyright, please see the LICENSE file.
+
+
+Preface
+=======
+StormForce XR is a complete rewrite of StormForce v0.6.0 designed to be more modern and provide a universal interface to allow easier integration with third-party software.  Datasets are generated in XML which is then compressed with GZIP then finally transported over XMLRPC.  This should allow easy integration with multiple development languages (eg. Python, dotNET, etc).  A seperate document XMLRPC provides information on the XMLRPC procedures and details.
+
+The server component only requires THREE external Python modules to be installed: psycopg2, serial, and twisted - these are required.
+The client component only requires ONE external Python module to be installed: pygame >= 1.8 - this is required.  matplotlib and numpy are optional which provide the graphing backend.
+
+StormForce XR is aiming to use less external packages for easier installation.
+
+
+However, StormForce XR will not support the StormTracker - this is due to the library only working on Linux.  I need this project as cross-platform as possible, so if you need to use the StormTracker stick with the original StormForce.
+
+GPS support has been removed since StormForce didn't use any of the data provided by the unit.
+
+
+*** Bug fixes will no longer be made to StormForce, only to StormForce XR. ***
+
+
+Notes (S = server, C = client)
+==============================
+v0.5.0 - 15th March 2014
+^^^^^^^^^^^^^^^^^^^^^^^^
+ 1. (S) Log messages now use my new logging class DanLog provided by danlog.py.
+ 2. (C) Log messages now use my new logging class DanLog provided by danlog.py.
+ 3. (S) Refactored the main code into a new class.
+ 4. (S) New database class to handle database operations.
+ 5. (C) Incorrectly used "-" as the marker in matplotlib which could cause it to fail to draw the graph.  Corrected it.
+ 6. (C) Refactored the main code into a new class.
+ 7. (S) The TRAC update period (ie. how often it's run) is now set in the settings XML file.  Defaults to two minutes.
+ 8. (S) TRAC now has multiple detection methods, take a look at the new section below which gives the values to set in the settings XML file.
+ 9. (S) Refactored the TRAC code into a new class.
+10. (S) The default TRAC detection method (zero) has been made more efficient - it no longer scans grid which don't have any strikes in them and the offset is sent in a single SQL statement.
+11. (S) TRAC didn't log the absolute distance into the database (tblTRACHeader) instead it logged the pre-absolute distance, corrected.
+12. (S) The storm offset calculation in TRAC was wrong when calculating the BL sector, corrected.
+13. (S) The database updating code has been improved not to throw exceptions if the table and/or columns already exist.
+14. (S) PostgreSQL 9.3 is now the minimum version since 9.0 is getting a bit old now (it's EOL in September 2015).  We also need to use "pgcrypto" for strong checksums, you'll need to install the "contrib" package as well.  Don't forget to create the extension in the database (instructions updated below).
+15. (S) TRAC now runs as a function in PostgreSQL (fnTRAC) written in PLPGSQL.
+16. (S) Close storms in TRAC should no longer cause excessive overlapping.
+
+v0.4.1 - 12th May 2012
+^^^^^^^^^^^^^^^^^^^^^^
+1. (C) The graphing class now disposes it's objects, should help with matplotlib's garbage collector.
+2. (S) The vwStrikesPeak view wasn't quite right when used with TRAC, this has been corrected and renamed to vwTRACStrikesPeak.
+3. (S) TRAC's peak strike count was based on the last minute, this has been changed to the last five minutes to match the TRAC run period.
+4. (S) runTRAC() XMLRPC call removed.
+5. (C) Removed more obsolete commands from the client.
+6. (S) testTRAC() XMLRPC call removed.
+7. (C) Two new strike shapes, both based on a plus sign.  New section below indicating the values to set in the settings XML file - should have done this earlier.
+8. (C) TRAC's grid is now displayed when running in debug mode.
+9. (S) TRAC's intensity detection wasn't right, should now be correct.
+
+v0.4.0 - 6th May 2012
+^^^^^^^^^^^^^^^^^^^^^
+ 1. (S) Introspection has been added to the XMLRPC server.
+ 2. (S) fakeStrikes() XMLRPC call removed.
+ 3. (S) insertIntoPersistence() XMLRPC call removed.
+ 4. (S) strikePersistence() XMLRPC call returned data altered, please review the XMLRPC document.
+ 5. (S) rotateLogs() XMLRPC call removed.
+ 6. (S) There is no longer the concept of strike persistence, everything is now based on the main strikes table (tblStrikes).  The SQL views have been amended to return the new data format.  The data returned will be the last hour worth of strikes (based on the request time) but never earlier than the server started date, you will also be given the strike age in seconds (rounded to an integer).  This allows for greater control of the strike display on the client side.  Please review the XMLRPC document.
+ 7. (C) Using the new strike age field, strikes are now colour coded in five minute slots rather than the old ten minute slots.  Colours have been changed also, hopefully will help with certain background maps.
+ 8. (C) Mini client now displays the strike age when requesting the persistence.
+ 9. (S) TRAC now runs every five minutes.
+10. (S) SQL view vwTRACPersistence is now correctly dropped and recreated on server startup.
+11. (C) Client no longer attempts to send demo strikes back to server, the XMLRPC calls have been removed anyway.
+12. (S) The XMLRPC server will only serve on it's child URL "/xmlrpc", no client code changes will be required - more of a notice really.
+13. (C) Improved the cron() routine should exceptions occur.
+14. (S) Altered XMLRPC call lastHourOfStrikesByMinute() to provide the strike age in minutes.  Please review the XMLRPC document.
+15. (C) Mini client altered to display the above.
+16. (C) The screen capture file is now located in the new "capture" directory, the filename remains the same.
+17. (C) Default capture time is now 15 seconds.
+18. (C) A strike history graph is now shown for the last 60 minutes.  This requires "matplotlib" and "numpy" to be installed - if it isn't then you won't get the graphs, it's an optional dependency.  The graphing update period can be changed using it's "UpdatePeriodGraphs" XML setting.  The graphs will be stored in the "graphs" directory.
+19. (C) The "capture" and "graphs" directories will be cleaned up on client startup (ie. all files will be deleted).
+
+v0.3.1 - 23rd April 2012
+^^^^^^^^^^^^^^^^^^^^^^^^
+1. (S) TRAC now logs the most active storms distance as well as the closest, XMLRPC calls now return extra columns please read the XMLRPC document for more information.
+2. (C) UI code changed to show the above.
+3. (S) New XMLRPC call lastHourOfStrikesByMinute() provides a strike summary grouped per minute.
+4. (C) Mini client can now show the strikes per minute.
+5. (S) Some imports from the old XMLRPC server was left behind - now cleaned up.
+6. (C) Mini client can now list storms TRAC is monitoring.
+
+v0.3.0 - 19th April 2012
+^^^^^^^^^^^^^^^^^^^^^^^^
+1. (S) The XMLRPC server now runs using Twisted and will now handle multiple clients simultaneously.  This is now a required component.
+
+v0.2.2 - 12th August 2011
+^^^^^^^^^^^^^^^^^^^^^^^^^
+1. (C) Now has a new mini version of the client which provides text based representation of the data.  Useful for when running SXR over DDP or you don't require a UI.  NOTE: Not all the features (e.g. screen capture, etc) are not present in the mini client.
+2. (S) The strikePersistence() XMLRPC call could have returned data in an incorrect order, this has been corrected.
+3. (S) The strikePersistence() XMLRPC call now includes the relative values of the strikes based on the map centre.
+
+v0.2.1 - 10th August 2011
+^^^^^^^^^^^^^^^^^^^^^^^^^
+1. (S) Tweaked connection parameters to the database.
+2. (S) Changed SQL parameters to named parameters.
+3. (C) Strike copyright is now read from the server.
+4. (S) serverDetails() XMLRPC call had it's index wrong when returning the data, corrected.
+5. (C) The server details are now displayed on the top left of the screen.
+
+v0.2.0 - 7th August 2011
+^^^^^^^^^^^^^^^^^^^^^^^^
+1. (S) Moved from MySQL to PostgreSQL v9.X.
+2. (C) Tweaked connection hostname for the client as the server doesn't appear to listen on IPv6 addresses, now uses 127.0.0.1 as default.
+3. (S) Improved the receiver status, now reports the receiver missing if it hasn't heard from it for five seconds or more.
+
+v0.1.3 - 27th May 2011
+^^^^^^^^^^^^^^^^^^^^^^
+1. (S) Corrected serial code when running under Windows.  Windows doesn't like XONXOFF set to NULL so it's now set to FALSE.
+2. (C) Forgot to add the range circles to the settings XML.
+
+v0.1.2 - 22nd May 2011
+^^^^^^^^^^^^^^^^^^^^^^
+1. (S) Corrections to the EFM-100 handling code.
+
+v0.1.1 - 21st May 2011
+^^^^^^^^^^^^^^^^^^^^^^
+1. (C) Client component.
+
+v0.1.0 - 16th May 2011
+^^^^^^^^^^^^^^^^^^^^^^
+1. (S) Initial release, server component only.
+
+v0.0.0 - 14th May 2011
+^^^^^^^^^^^^^^^^^^^^^^
+1. Development started.
+
+
+Usage
+=====
+On the command line: -
+
+% python sxr_client.py
+% python sxr_mini_client.py
+% python sxr_server.py
+
+
+Current Features (S = server, C = client)
+=========================================
+ 1. (S) XMLRPC server served on a single port which can be changed in the settings XML file.
+ 2. (S) Records strikes into PostgreSQL as soon as they are received from the Boltek LD-250.
+ 3. (S) Records the electric field strength into PostgreSQL as soon as it is received from the Boltek EFM-100.
+ 4. (S) Basic storm tracking using my implementation of TRAC, TRAC can also have it's storm searching parameters changed in the settings XML file.
+ 5. (C) Completely stateless client, the server provides all the data so parameters like the strikes, TRAC, uptime, etc are kept even if you restart the client or start another on another computer.
+ 6. (C) Periodic screen capture for uploading.
+ 7. (C) Screen update times (known as the "update period") can be changed if user requires in the settings XML file.
+ 8. (C) Mini client provides quick access to the data and doesn't require any external dependencies - just a base install of Python.
+ 9. (C) Strike history graph provided by matplotlib (if installed).
+10. (C) Strike shapes can be changed in the settings XML file.
+
+
+Future Features
+===============
+1. SSBT.
+2. Boltek LD-350 support.
+
+
+Client Strike Shapes
+====================
+0 = Square
+1 = Triangle (pointing down)
+2 = Circle
+3 = Plus with black outline, coloured fill
+4 = Plus with coloured outline, transparent fill
+
+
+TRAC Detection Methods
+======================
+0 = Uses a fixed-grid to determine whether the number of strikes exceeds a threshold
+1 = Uses a freestyle-grid to determine whether the number of strikes exceeds a threshold
+
+
+Installation
+============
+FreeBSD
+^^^^^^^
+Here are the packages I've currently got installed for StormForce XR to work: -
+
+================================================================================================================================
+Name				|	Download From	|	Directory
+====================+===================+=======================================================================================
+py27-game			|	Ports			|	/usr/ports/devel/py-game/
+py27-matplotlib		|	Ports			|	/usr/ports/math/py-matplotlib/
+py27-scimath		|	Ports			|	/usr/ports/science/py-scimath/
+py27-psycopg2		|	Ports			|	/usr/ports/databases/py-psycopg2/
+py27-serial			|	Ports			|	/usr/ports/comms/py-serial/
+py27-twisted		|	Ports			|	/usr/ports/devel/py-twisted/
+python27			|	Ports			|	/usr/ports/lang/python/
+====================+===================+=======================================================================================
+postgres93-server	|	Ports			|	/usr/ports/databases/postgresql93-server/
+postgres93-client	|	Ports			|	/usr/ports/databases/postgresql93-client/
+postgres93-contrib	|	Ports			|	/usr/ports/databases/postgresql93-contrib/
+================================================================================================================================
+
+You can install them in any order, you might want to make sure the your ports collection is up-to-date.  Python 2.7 is normally installed by default so don't worry about that one.
+
+
+Linux
+^^^^^
+*** This section needs updating. ***
+
+
+MacOS
+^^^^^
+Untested - But no problems are expected.
+
+
+Microsoft Windows
+^^^^^^^^^^^^^^^^^
+Install Python 2.7 (http://www.python.org/ftp/python/2.7.3/python-2.7.3.msi), pySerial (http://pypi.python.org/packages/any/p/pyserial/pyserial-2.5.win32.exe), pygame (http://pygame.org/ftp/pygame-1.9.1.win32-py2.7.msi), psycopg2 (http://www.stickpeople.com/projects/python/win-psycopg/psycopg2-2.4.5.win32-py2.7-pg9.1.3-release.exe), twisted (http://pypi.python.org/packages/2.7/T/Twisted/Twisted-12.0.0.win32-py2.7.msi), numpy (http://sourceforge.net/projects/numpy/files/NumPy/1.6.1/numpy-1.6.1-win32-superpack-python2.7.exe/download), and matplotlib (http://sourceforge.net/projects/matplotlib/files/matplotlib/matplotlib-1.1.0/matplotlib-1.1.0.win32-py2.7.exe/download).
+
+
+Please note that the psycopg2 package is not a official build, have a look on the website for more information: http://www.stickpeople.com/projects/python/win-psycopg/
+
+*** Remember that you only need certain packages installed depending on which component of StormForce XR you want to use. ****
+
+
+PostgreSQL
+==========
+All that StormForce XR needs is the actual database and username setup, the tables, views, indices, and functions will be handled by the program itself.
+
+Run the following commands: -
+
+ # su pgsql
+ $ createdb stormforce_xr
+ $ psql stormforce_xr
+=# CREATE USER stormforce_user WITH password 'password';
+=# GRANT ALL PRIVILEGES ON DATABASE stormforce_xr TO stormforce_user;
+=# ALTER DATABASE stormforce_xr OWNER TO stormforce_user;
+=# CREATE EXTENSION pgcrypto;
+
+
+Then give StormForce XR the connection details in the settings XML.
+
+
+FAQ
+===
+Q. What are the dependencies for this program?
+A. Python v2.7 or greater.  Modules used are StringIO, datetime, gzip, hashlib, math, matplotlib*, numpy*, os, pygame*, psycopg2*, serial*, sys, threading, time, twisted*, xmlrpclib, xml, and zlib.  * - External package which requires installing since it's not normally installed by default.
+
+Q. What operating systems does it support?
+A. I develop and test StormForce XR with FreeBSD 9.1, it should work in other POSIX compliant operating systems as well other distros of Linux.
+
+Q. Can I create (port) of StormForce XR?
+A. By all means! Be sure to read the LICENSE first.
+
+Q. I've found a bug! What do I do?
+A. Let me know by raising it as an issue so I can fix it in the next version.
+
+Q. I would like a feature that's not in StormForce XR...
+A. I'm currently not accepting feature requests.
+
+Q. Can StormForce XR send it's strike data to Blitzortung?
+A. Unfortunately this is not possible due the strikes needing microsecond accuracy which the Boltek LD-250 doesn't provide, even when used with a GPS unit.  Egor from Blitzortung informed me of this.
+
+
+Legal
+=====
+I am in no way affiliated or in partnership with either Boltek, Google, NASA, Microsoft, or anyone else.
+
+<EOF>
